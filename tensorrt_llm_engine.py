@@ -1,4 +1,5 @@
-from tensorrt_llm import LLM, BuildConfig, KVCacheConfig
+from tensorrt_llm import LLM, BuildConfig
+from tensorrt_llm.llmapi import KvCacheConfig
 from tensorrt_llm.sampling_params import SamplingParams
 from tensorrt_llm.executor import LoRARequest
 from tensorrt_llm.lora_manager import LoraConfig
@@ -15,9 +16,9 @@ class TensorRTLLMEngineBenchmark:
         
         # Initialize TensorRT-LLM engine with LoRA support
         # We need at least one lora_dir to build the engine with LoRA support
-        build_config = BuildConfig()
+        build_config = BuildConfig(max_seq_len=35000, max_input_len=35000, max_num_tokens=35000)
         build_config.lora_config = LoraConfig(lora_dir=[loras[0]] if loras else [])
-        kv_cache_config = KVCacheConfig(host_cache_size=1024*1024*offload_mem) # need to convert to bytes
+        kv_cache_config = KvCacheConfig(host_cache_size=1024*1024*offload_mem) # need to convert to bytes
         
         self.llm = LLM(
             model=model_name,

@@ -9,7 +9,7 @@ tok  = AutoTokenizer.from_pretrained(model_name)
 base = AutoModelForCausalLM.from_pretrained(
         model_name,
         # load_in_4bit=True,                    # remove if you have >20 GB VRAM
-        device_map="auto")
+        device_map="cpu")
 
 def make_adapter(seed:int, steps:int=0, dataset="wikitext", split="train[:1%]"):
     torch.manual_seed(seed)

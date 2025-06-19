@@ -206,7 +206,7 @@ def variable_num_requests_experiment(engines: list[str], context_size: list[int]
     return results
 
 def exp_1_fixed_context(engines, offload_mem: int = 0):
-    context_size = [1000, 2000, 4000, 8000, 16000, 32000]
+    context_size = [1000, 2000, 4000, 8000, 16000, 32000][:CUT_CONTEXT_TO]
     max_new_tokens = 500
     num_requests = 20
     warmup_iters = 1
@@ -224,9 +224,9 @@ def exp_1_fixed_context(engines, offload_mem: int = 0):
         results.to_csv(f"{PREFIX}exp_1_context_offload_mem_{offload_mem}.csv")
     
 def exp_2_num_requests_random_context(engines, offload_mem: int = 0):
-    context_size = [1000, 2000, 4000, 8000, 16000, 32000]
+    context_size = [1000, 2000, 4000, 8000, 16000, 32000][:CUT_CONTEXT_TO]
     max_new_tokens = 500
-    num_requests = [1, 2, 4, 8, 12, 16, 32]
+    num_requests = [1, 2, 4, 8, 12, 16, 32][:CUT_NUM_REQUESTS_TO]
     warmup_iters = 1
     num_iters = 1
     num_loras = 4
@@ -243,7 +243,7 @@ def exp_2_num_requests_random_context(engines, offload_mem: int = 0):
     
 def exp_3_num_requests_fixed_context(engines, context_size, offload_mem: int = 0):
     max_new_tokens = 500
-    num_requests = [2, 4, 8, 12, 16, 32]
+    num_requests = [1, 2, 4, 8, 12, 16, 32][:CUT_NUM_REQUESTS_TO]
     warmup_iters = 1
     num_iters = 1
     num_loras = 4
@@ -282,12 +282,15 @@ if __name__ == "__main__":
     MODEL = "3B"
     # MODEL = "7B"
     
-    PREFIX = "GPU_" + GPU_NAME + "_" + MODEL + "_"
-    if os.environ.get("VLLM_USE_V1") is not None:
-        PREFIX += "VLLM_USE_V1_" + os.environ.get("VLLM_USE_V1") + "_"
+    PREFIX = ""
+    
+    CUT_CONTEXT_TO = 6
+    CUT_NUM_REQUESTS_TO = 7
 
     # engines = ["peft", "vllm"][::-1]  
-    engines = ["vllm"]
+    # engines = ["peft"]
+    # engines = ["vllm"]
+    engines = ["trt_llm"]
     # engines = ["peft", "vllm", "trt_llm"]
     # FULL TEST
     exp_1_fixed_context(engines)
