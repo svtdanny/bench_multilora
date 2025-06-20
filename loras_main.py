@@ -19,6 +19,7 @@ def create_engine(engine_name: str, model_name: str, loras: list[str], offload_m
                                 max_lora_rank=8,
                                 cpu_offload_gb=offload_mem,
                                 swap_space=offload_mem,
+                                max_model_len=35000,
                                 )
         return VLLMEngineBenchmark(loras, engine_args)
     elif engine_name == "trt_llm":
