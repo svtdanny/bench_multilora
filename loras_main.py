@@ -298,10 +298,10 @@ if __name__ == "__main__":
     exp_2_num_requests_random_context(engines)
     exp_3_num_requests_fixed_context(engines, 8000)
     exp_3_num_requests_fixed_context(engines, 16000)
-    exp_4_loras(engines, [16000]) # Run this one time. Its not really relevant, if multilora support is implemented.
+    # exp_4_loras(engines, [16000]) # Run this one time. Its not really relevant, if multilora support is implemented.
 
     # OFFLOADING
-    exp_1_fixed_context(engines, offload_mem=100)
-    exp_2_num_requests_random_context(engines, offload_mem=100)
+    # exp_1_fixed_context(engines, offload_mem=100)
+    # exp_2_num_requests_random_context(engines, offload_mem=100)
     # exp_3_num_requests_fixed_context(engines, 8000, offload_mem=100)
     # exp_4_loras(engines, [8000], offload_mem=100)
