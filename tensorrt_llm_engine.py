@@ -8,7 +8,7 @@ import torch
 
 
 class TensorRTLLMEngineBenchmark:
-    def __init__(self, loras: list[str], model_name: str, max_lora_rank: int = 64, offload_mem: int = 0):
+    def __init__(self, loras: list[str], model_name: str, max_lora_rank: int = 8, offload_mem: int = 0):
         self.loras = loras
         self.model_name = model_name
         self.max_lora_rank = max_lora_rank

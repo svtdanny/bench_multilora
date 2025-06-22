@@ -32,7 +32,7 @@ def create_engine(engine_name: str, model_name: str, loras: list[str], offload_m
         raise ValueError(f"Engine {engine_name} not supported")
 
 
-def generate_requests_fixed_context(tokenizer, num_loras: int, num_requests: int, context_size: list[int], max_new_tokens: int, seed: int = 42):
+def generate_requests_fixed_context(tokenizer, num_loras: int, num_requests: int, context_size: list[int], max_new_tokens: int, seed: int = 42, nolora: bool = False):
     random.seed(seed)
     
     requests = []
@@ -44,7 +44,7 @@ def generate_requests_fixed_context(tokenizer, num_loras: int, num_requests: int
         text = tokenizer.decode(token_ids)
         
         # Alternate between LoRA 0 and 1
-        lora_id = random.randint(0, num_loras-1)
+        lora_id = random.randint(0, num_loras-1) if not nolora else None
         requests.append((text, BenchmarkSamplingParams(max_new_tokens=max_new_tokens, lora_id=lora_id)))
     
     return requests
@@ -120,7 +120,7 @@ def main():
     time = measure_experiment(engine, requests, warmup_iters, num_iters)
     return time
 
-def fixed_loras_experiment(engines: list[str], context_size: list[int], max_new_tokens: int, num_loras: int, num_requests: int, warmup_iters: int, num_iters: int, offload_mem: int = 0):
+def fixed_loras_experiment(engines: list[str], context_size: list[int], max_new_tokens: int, num_loras: int, num_requests: int, warmup_iters: int, num_iters: int, offload_mem: int = 0, nolora: bool = False):
     args = parse_args()
 
     model_name = args.model_name
@@ -135,7 +135,7 @@ def fixed_loras_experiment(engines: list[str], context_size: list[int], max_new_
         print(f"Engine {engine_name}")
         engine = create_engine(engine_name, model_name, lora_path, offload_mem=offload_mem)
         for ctx_size in tqdm(context_size):
-            requests = generate_requests_fixed_context(tokenizer, len(lora_path), num_requests, [ctx_size], max_new_tokens)
+            requests = generate_requests_fixed_context(tokenizer, len(lora_path), num_requests, [ctx_size], max_new_tokens, nolora=nolora)
             
             time = measure_experiment(engine, requests, warmup_iters, num_iters)
             results.loc[engine_name, ctx_size] = time
@@ -206,6 +206,19 @@ def variable_num_requests_experiment(engines: list[str], context_size: list[int]
     # print(results)
     return results
 
+def exp_0_no_lora(engines):
+    context_size = [1000, 2000, 4000, 8000, 16000, 32000][:CUT_CONTEXT_TO]
+    max_new_tokens = 500
+    num_requests = 20
+    warmup_iters = 1
+    num_iters = 1
+    num_loras = 4
+    
+    results = fixed_loras_experiment(engines, context_size, max_new_tokens, num_loras, num_requests, warmup_iters, num_iters, nolora=True)
+    print("Result exp_0_no_lora:")
+    print(results)
+    results.to_csv("exp_0_no_lora.csv")
+
 def exp_1_fixed_context(engines, offload_mem: int = 0):
     context_size = [1000, 2000, 4000, 8000, 16000, 32000][:CUT_CONTEXT_TO]
     max_new_tokens = 500
@@ -227,7 +240,7 @@ def exp_1_fixed_context(engines, offload_mem: int = 0):
 def exp_2_num_requests_random_context(engines, offload_mem: int = 0):
     context_size = [1000, 2000, 4000, 8000, 16000, 32000][:CUT_CONTEXT_TO]
     max_new_tokens = 500
-    num_requests = [1, 2, 4, 8, 12, 16, 32][:CUT_NUM_REQUESTS_TO]
+    num_requests = [1, 2, 4, 6, 8, 12, 16][:CUT_NUM_REQUESTS_TO]
     warmup_iters = 1
     num_iters = 1
     num_loras = 4
@@ -244,7 +257,7 @@ def exp_2_num_requests_random_context(engines, offload_mem: int = 0):
     
 def exp_3_num_requests_fixed_context(engines, context_size, offload_mem: int = 0):
     max_new_tokens = 500
-    num_requests = [1, 2, 4, 8, 12, 16, 32][:CUT_NUM_REQUESTS_TO]
+    num_requests = [1, 2, 4, 6, 8, 12, 16][:CUT_NUM_REQUESTS_TO]
     warmup_iters = 1
     num_iters = 1
     num_loras = 4
@@ -279,10 +292,6 @@ def exp_4_loras(engines, context_size, offload_mem: int = 0):
 if __name__ == "__main__":
     # time = main()
     
-    GPU_NAME = "a100"
-    MODEL = "3B"
-    # MODEL = "7B"
-    
     PREFIX = ""
     
     CUT_CONTEXT_TO = 6
@@ -290,18 +299,19 @@ if __name__ == "__main__":
 
     # engines = ["peft", "vllm"][::-1]  
     # engines = ["peft"]
-    # engines = ["vllm"]
-    engines = ["trt_llm"]
+    engines = ["vllm"]
+    # engines = ["trt_llm"]
     # engines = ["peft", "vllm", "trt_llm"]
     # FULL TEST
+    exp_0_no_lora(engines)
     exp_1_fixed_context(engines)
-    exp_2_num_requests_random_context(engines)
+    # exp_2_num_requests_random_context(engines)
     exp_3_num_requests_fixed_context(engines, 8000)
     exp_3_num_requests_fixed_context(engines, 16000)
-    # exp_4_loras(engines, [16000]) # Run this one time. Its not really relevant, if multilora support is implemented.
+    exp_4_loras(engines, [16000]) # Run this one time. Its not really relevant, if multilora support is implemented.
 
     # OFFLOADING
-    # exp_1_fixed_context(engines, offload_mem=100)
-    # exp_2_num_requests_random_context(engines, offload_mem=100)
+    exp_1_fixed_context(engines, offload_mem=100)
+    exp_2_num_requests_random_context(engines, offload_mem=100)
     # exp_3_num_requests_fixed_context(engines, 8000, offload_mem=100)
     # exp_4_loras(engines, [8000], offload_mem=100)

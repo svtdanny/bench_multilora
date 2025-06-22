@@ -12,7 +12,12 @@ class VLLMEngineBenchmark:
 
     def process_requests(self, requests: list):
         requests_impl = [
-            (request[0], SamplingParams(max_tokens=request[1].max_new_tokens), LoRARequest(self.loras[request[1].lora_id], 1, self.loras[request[1].lora_id]))
+            (
+                request[0], 
+                SamplingParams(
+                    max_tokens=request[1].max_new_tokens), 
+                    LoRARequest(self.loras[request[1].lora_id], 1, self.loras[request[1].lora_id]) if request[1].lora_id is not None else None
+            )
             for request in requests
         ]
         request_id = 0
